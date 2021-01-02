@@ -1,5 +1,5 @@
 (* -------------------------------------------------------------------- *)
-From mathcomp Require Import all_ssreflect.
+Require Import ssreflect ssrbool List.
 
 Set Implicit Arguments.
 
@@ -39,7 +39,11 @@ Parameter (A : Type).
 (* represent words as lists whose elements are inhabitants of `A`. This *)
 (* naturally leads to the following definition:                         *)
 
-Notation word := (seq A).
+Notation word := (list A).
+
+(* -------------------------------------------------------------------- *)
+(* You can get an overview of the List library at the following URL:    *)
+(* https://coq.inria.fr/distrib/current/stdlib/Coq.Lists.List.html      *)
 
 (* -------------------------------------------------------------------- *)
 (* In this setting, a `language` is simply a subset of A*. Assuming     *)
@@ -64,16 +68,16 @@ Notation word := (seq A).
 (*      - P(w) = any prefix of w contain no more ]'s then ['s           *)
 (*      - Q(w) = the number of ['s and ]'s of w are equal.              *)
 
-(* -------------------------------------------------------------------- *)
-(* We can also combine languages to form other languages. For example,  *)
-(* if L and G are languages, we can define:                             *)
-(*                                                                      *)
-(*  - the union of L & G            L ∪ G                               *)
-(*  - the concatenation of L & G    { w1 · w2 | w1 ∈ L, w2 ∈ G }        *)
-(*  - the intersection of L & G     L ∩ G                               *)
-(*  - the complement of L           A* \ L                              *)
-(*  - the Kleene closure of L       L* = { wⁿ | w ∈ L, n ∈ ℕ }          *)
-(*  - the mirror of L               rev(L) = { rev(w) | w ∈ L }         *)
+(* --------------------------------------------------------------------      *)
+(* We can also combine languages to form other languages. For example,       *)
+(* if L and G are languages, we can define:                                  *)
+(*                                                                           *)
+(*  - the union of L & G            L ∪ G                                    *)
+(*  - the concatenation of L & G    { w1 · w2 | w1 ∈ L, w2 ∈ G }             *)
+(*  - the intersection of L & G     L ∩ G                                    *)
+(*  - the complement of L           A* \ L                                   *)
+(*  - the Kleene closure of L       L* = { w_1 ... w_n | n \in ℕ, w_i ∈ L }  *)
+(*  - the mirror of L               rev(L) = { rev(w) | w ∈ L }              *)
 
 (* -------------------------------------------------------------------- *)
 (* To define languages in Coq, we need a way to represent subsets       *)
@@ -94,7 +98,7 @@ Notation language := (word -> Prop).
 (* From now use, we assume that L, G, H denote languages, x, y denote   *)
 (* letters and that and w denotes a word.                               *)
 
-Implicit Types (L G H : language) (x y : A) (w : seq A).
+Implicit Types (L G H : language) (x y : A) (w : word).
 
 (* -------------------------------------------------------------------- *)
 (* From there, we can define the following languages                    *)
@@ -106,36 +110,44 @@ Definition lang0 : language :=
 
 (* The language that only contains the empty word.                      *)
 Definition lang1 : language :=
-  fun w => w = [::].
+  fun w => w = nil.
 
 (* Q1. We now ask you to define the following languages                 *)
 
 (*  Given a word `w0`, the language that only contains the word `w0`.   *)
-Definition langW w0 : language := todo.
+Definition langW w0 : language :=
+  fun w => w0=w.
 
 (* Given a sequence `ws` of words, the language that contains all the   *)
 (* the words `ws` and only these words.                                 *)
-Definition langF (ws : seq word) : language := todo.
+Definition langF (ws : list word) : language :=
+  fun w => (In w ws).
 
 (* Given a letter `x`, the language that only contains the letter `x`   *)
 (* seen as a word of length 1.                                          *)
-Definition langA x : language := todo.
+Definition langA x : language :=
+  fun w => w = (cons x nil).
 
 (* The union of the two languages `L` and `G`.                          *)
-Definition langU L G : language := todo.
+Definition langU L G : language :=
+  fun w => (L w) \/ (G w).
 
 (* The intersection of the two languages `L` and `G`.                   *)
-Definition langI L G : language := todo.
+Definition langI L G : language :=
+  fun w => (L w) /\ (G w).
 
 (* The concatenation of the two languages `L` and `G`.                  *)
-Definition langS L G : language := todo.
+Definition langS L G : language :=
+  fun w => (exists w1 w2 : word, (w1 ++ w2 = w) /\ (L w1) /\ (G w2)).
 
 (* The Kleene closure of the language `L`                               *)
 Definition langK L : language := todo.
 
+
 (* The mirror of the language `L` (You can use the `rev`, that reversed *)
 (* a list, from the standard library. *)
-Definition langM L : language := todo.
+Definition langM L : language :=
+  fun w => (exists w1 : word, w = rev(w1)).
 
 (* -------------------------------------------------------------------- *)
 (* Given two languages, we will consider `L` & `G` equal iff they       *)
@@ -165,7 +177,7 @@ Proof. todo. Qed.
 Lemma unionC L G : langU L G =L langU G L.
 Proof. todo. Qed.
 
-Lemma interC L G : langU L G =L langI G L.
+Lemma interC L G : langI L G =L langI G L.
 Proof. todo. Qed.
 
 Lemma langKK L : langK (langK L) =L langK L.
@@ -338,7 +350,7 @@ Definition contains0 (r : regexp) : bool := todo.
 
 (* Q13. prove that your definition of `contains0` is correct:           *)
 
-Lemma contains0_ok r : contains0 r <-> interp r [::].
+Lemma contains0_ok r : contains0 r <-> interp r nil.
 Proof. todo. Qed.
 
 (* We give below the definition of the Brzozowski's derivative:         *)
@@ -348,13 +360,22 @@ Proof. todo. Qed.
 (*   - x⁻¹ · ε         = ∅                                              *)
 (*   - x⁻¹ · ∅         = ∅                                              *)
 (*   - x⁻¹ · (r₁ | r₂) = (x⁻¹ · r₁) | (x⁻¹ · r₂)                        *)
-(*   - x⁻¹ · (r₁ · r₂) = (x⁻¹ · r) · s | E(r) · (x⁻¹ · S)               *)
+(*   - x⁻¹ · (r₁ · r₂) = (x⁻¹ · r₁) · r₂ | E(r₁) · (x⁻¹ · r₂)           *)
 (*   - x⁻¹ · r*        = (x⁻¹ · r) · r*                                 *)
 (*                                                                      *)
 (* where E(r) = ε if ε ∈ [r] & E(r) = ∅ otherwise.                      *)
 
 (* Q14. write a function `Brzozowski` that computes a Brzozowski's      *)
 (*      derivative as defined above.                                    *)
+(*                                                                      *)
+(* For that purpose, you may need to have a decidable equality over     *)
+(* `A`. The parameter `Aeq` along with the axioms `Aeq_dec` give        *)
+(* you such a decidable equality.                                       *)
+
+Parameter Aeq : A -> A -> bool.
+
+(* Here, `Aeq x y` has to be read as `Aeq x y = true`                   *)
+Axiom Aeq_dec : forall (x y : A), Aeq x y <-> x = y.
 
 Definition Brzozowski (x : A) (r : regexp) : regexp := todo.
 
@@ -375,7 +396,7 @@ Lemma rmatch_correct (r : regexp) (w : word):
   rmatch r w -> interp r w.
 Proof. todo. Qed.
 
-(* Q18. (HARD) show that `rmatch` is complete.                          *)
+(* Q18. (HARD - OPTIONAL) show that `rmatch` is complete.               *)
 
 Lemma rmatch_complete (r : regexp) (w : word):
   interp r w -> rmatch r w.
