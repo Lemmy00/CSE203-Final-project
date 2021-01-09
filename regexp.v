@@ -138,11 +138,18 @@ Definition langI L G : language :=
 
 (* The concatenation of the two languages `L` and `G`.                  *)
 Definition langS L G : language :=
-  fun w => (exists w1 w2 : word, (w1 ++ w2 = w) /\ (L w1) /\ (G w2)).
+  fun w => (exists w1 w2 : word, ( w1 ++ w2 = w) /\ (L w1) /\ (G w2)).
+
+
+Fixpoint Ln L n : language :=
+match n with
+|0 => lang1
+|S n => langS L (Ln L n)
+end.
 
 (* The Kleene closure of the language `L`                               *)
-Definition langK L : language := todo.
-
+Definition langK L : language :=
+fun w => exists n, Ln L n w.
 
 (* The mirror of the language `L` (You can use the `rev`, that reversed *)
 (* a list, from the standard library. *)
@@ -160,28 +167,99 @@ Infix "=L" := eqL (at level 90).
 (* Q2. Prove the following equivalances:                                *)
 
 Lemma concat0L L : langS lang0 L =L lang0.
-Proof. todo. Qed.
+Proof.
+move=> w.
+split; unfold langS; unfold lang0; try done.
+move=> [w1 [w2 [h [Contradition h1]]]].
+done.
+Qed.
 
 Lemma concatL0 L : langS L lang0 =L lang0.
-Proof. todo. Qed.
+Proof.
+move=> w.
+split; unfold langS; unfold lang0; try done.
+move=> [w1 [w2 [h [h1 Contradition]]]].
+done.
+Qed.
 
 Lemma concat1L L : langS lang1 L =L L.
-Proof. todo. Qed.
+Proof.
+move => w.
+split; unfold langS; unfold lang1.
++move=> [w1 [w2 [h [nil Lw]]]].
+ rewrite nil in h.
+ simpl in h.
+ rewrite h in Lw.
+ done.
++move => Lw.
+ exists nil. exists w.
+ done.
+Qed.
 
 Lemma concatL1 L : langS L lang1 =L L.
-Proof. todo. Qed.
+Proof.
+move => w.
+split; unfold langS; unfold lang1.
++move=> [w1 [w2 [h [Lw nil]]]].
+ rewrite nil in h.
+ rewrite (app_nil_r w1) in h.
+ rewrite h in Lw. done.
++move => Lw.
+ exists w. exists nil.
+ split; try done.
+ apply (app_nil_r w).
+Qed.
+
 
 Lemma concatA L G H : langS (langS L G) H =L langS L (langS G H).
-Proof. todo. Qed.
+Proof.
+move => w.
+split; unfold langS.
++move => [w1 [w2 [h [[w3 [w4 [h1 [Lw3 Gw4] Hw2]]]]]]].
+ exists w3. exists (w4 ++ w2).
+ split.
+ *rewrite <-h1 in h.
+  rewrite <- h. 
+  apply app_assoc.
+ *split; try done.
+  exists w4. exists w2.
+  done.
++move => [w1 [w2 [h [Lw1 [w3 [w4 [h1 [Gw3 Hw4]]]]]]]].
+ exists (w1 ++ w3). exists w4.
+ split.
+ *rewrite <-h1 in h.
+  rewrite <- h. symmetry.
+  apply app_assoc.
+ *split; try done.
+  exists w1. exists w3. 
+  done.
+Qed.
 
 Lemma unionC L G : langU L G =L langU G L.
-Proof. todo. Qed.
+Proof.
+move => w.
+unfold langU.
+split; move => [h1 | h2].
++right. done.
++left. done.
++right. done.
++left. done.
+Qed.
 
 Lemma interC L G : langI L G =L langI G L.
-Proof. todo. Qed.
+Proof.
+move => w.
+unfold langI.
+split; move => [h1  h2]; split; done.
+Qed.
 
 Lemma langKK L : langK (langK L) =L langK L.
-Proof. todo. Qed.
+Proof.
+move => w.
+split; unfold langK.
++move => [n h].
+ exists n. 
+Qed.
 
 (* Note that, since languages are represented as indicator functions    *)
 (* over `Prop`, we cannot assess that `L =L G` implies `L = G`.         *)
