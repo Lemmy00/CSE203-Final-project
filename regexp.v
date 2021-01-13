@@ -141,20 +141,16 @@ Definition langS L G : language :=
   fun w => (exists w1 w2 : word, ( w1 ++ w2 = w) /\ (L w1) /\ (G w2)).
 
 
-Fixpoint Ln L n : language :=
-match n with
-|0 => lang1
-|S n => langS L (Ln L n)
-end.
-
 (* The Kleene closure of the language `L`                               *)
-Definition langK L : language :=
-fun w => exists n, Ln L n w.
+Inductive langK L : language :=
+|wnill : langK L nil
+|winL w : L w -> langK L w
+|cnct w1 w2 : langK L w1 -> langK L w2 -> langK L (w1 ++ w2).
 
 (* The mirror of the language `L` (You can use the `rev`, that reversed *)
 (* a list, from the standard library. *)
 Definition langM L : language :=
-  fun w => (exists w1 : word, w = rev(w1)).
+  fun w => L (rev w).
 
 (* -------------------------------------------------------------------- *)
 (* Given two languages, we will consider `L` & `G` equal iff they       *)
@@ -256,9 +252,13 @@ Qed.
 Lemma langKK L : langK (langK L) =L langK L.
 Proof.
 move => w.
-split; unfold langK.
-+move => [n h].
- exists n. 
+split; move => h; induction h; try done; try apply wnill.
+ + apply cnct; done.
+ + apply winL.
+   apply winL.
+   done.
+ + apply winL.
+   apply cnct; done.
 Qed.
 
 (* Note that, since languages are represented as indicator functions    *)
@@ -289,19 +289,58 @@ Inductive regular : language -> Prop :=
 
   (* The empty language is regular *)
 | REmpty : regular lang0
-
-(* TODO: to be completed *)
-.
+| REmptyW : regular lang1
+| ROneW : forall w0, regular (langW w0)
+| RUnion L1 L2 of regular L1 & regular L2 : regular (langU L1 L2)
+| RConc L1 L2 of regular L1 & regular L2 : regular (langS L1 L2)
+| RKleene L of regular L : regular (langK L).
 
 (* -------------------------------------------------------------------- *)
 (* Q4. prove that `langW w` is regular.                                 *)
 Lemma regularW w : regular (langW w).
-Proof. todo. Qed.
+Proof.
+apply ROneW.
+Qed.
 
 (* -------------------------------------------------------------------- *)
 (* Q5. prove that `langM L` is regular, given that L is regular.        *)
 Lemma regularM L : regular L -> regular (langM L).
-Proof. todo. Qed.
+Proof.
+move=> h.
+unfold langM.
+induction h.
++apply REq with (langM L); try done.
+ unfold langM.
+ split; apply H.
++apply REmpty.
++apply REq with (fun w => lang1 w).
+ *apply REmptyW.
+ *split; unfold lang1;induction w; try done.
+  move => h.
+  simpl in h.
+  symmetry in h.
+  apply app_cons_not_nil in h.
+  done.
++apply REq with (fun w => langW (rev w0) w).
+ *apply ROneW.
+ *split; unfold langW.
+  -move=> h.
+   rewrite h.
+   apply rev_involutive.
+  -move=> h. 
+   rewrite <-h. symmetry.
+   apply rev_involutive.
++apply RUnion.
+ *apply IHh1.
+ *apply IHh2.
++apply REq with (fun w => langS (langM L1) (langM L2) w).
+ *apply RConc; done.
+ *split; unfold langS; unfold langM; move => [w1 [w2 [h [l1 l2]]]].
+  -exists ( w1). exists ( w2).
+   split.
+   ** rewrite h.  
+
+Admitted.
 
 (* ==================================================================== *)
 (*                        REGULAR EXPRESSIONS                           *)
@@ -346,6 +385,9 @@ Inductive regexp : Type :=
 | RE_Empty : regexp
 | RE_Void  : regexp
 | RE_Atom  : A -> regexp
+| RE_Dis   : regexp -> regexp -> regexp
+| RE_Conct : regexp -> regexp -> regexp
+| RE_Kleene : regexp -> regexp
 
   (* TO BE COMPLETED *)
 .
@@ -368,14 +410,27 @@ Implicit Types (r : regexp).
 
 Fixpoint interp (r : regexp) {struct r} : language :=
   match r with
-  | _ => todo
+  | RE_Empty => lang0
+  | RE_Void => lang1
+  | RE_Atom A => langW (cons A nil)
+  | RE_Dis r1 r2 => (langU (interp r1) (interp r2))
+  | RE_Conct r1 r2 => (langS (interp r1) (interp r2))
+  | RE_Kleene r1 => (langK (interp r1))
   end.
 
 (* Q8. show that the interpretation of a regular expression is a        *)
 (*     regular language:                                                *)
 
 Lemma regular_regexp r : regular (interp r).
-Proof. todo. Qed.
+Proof.
+induction r; simpl.
++apply REmpty.
++apply REmptyW.
++apply ROneW.
++apply RUnion; done.
++apply RConc; done.
++apply RKleene; done.
+Qed.
 
 (* Q9. show that any regular language can be interpreted as a           *)
 (*     regular expression:                                              *)
