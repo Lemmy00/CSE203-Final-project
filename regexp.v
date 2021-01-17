@@ -719,9 +719,9 @@ Fixpoint contains0 (r : regexp) : bool :=
   | RE_Empty => false
   | RE_Void => true
   | RE_Atom _ => false
-  | RE_Dis a b => contains0 a || contains0 b
-  | RE_Conct a b => contains0 a && contains0 b
-  | RE_Kleene a => true
+  | RE_Dis r1 r2 => contains0 r1 || contains0 r2
+  | RE_Conct r1 r2 => contains0 r1 && contains0 r2
+  | RE_Kleene r => true
   end.
 
 (* Q13. prove that your definition of `contains0` is correct:           *)
@@ -802,7 +802,17 @@ Parameter Aeq : A -> A -> bool.
 (* Here, `Aeq x y` has to be read as `Aeq x y = true`                   *)
 Axiom Aeq_dec : forall (x y : A), Aeq x y <-> x = y.
 
-Definition Brzozowski (x : A) (r : regexp) : regexp := todo.
+Definition Brzozowski (x : A) (r : regexp) : regexp :=
+  match r with
+  | RE_Atom y => if (Aeq x y) then RE_Void else RE_Empty
+  | RE_Void => RE_Empty
+  | RE_Empty => RE_Empty
+  | RE_Dis r1 r2 => RE_Dis (Brzozowski x r1) (Brzozowski x r2)
+  | RE_Conct r1 r2 => if (contains0 r1) 
+    then RE_Dis (RE_Conct (Brzozowski x r1) r2) (RE_Conct RE_Void (Brzozowski x r2))
+    else RE_Dis (RE_Conct (Brzozowski x r1) r2) (RE_Conct RE_Empty (Brzozowski x r2))
+  | RE_Kleene r => RE_Conct (Brzozowski x r) (RE_Kleene r)
+  end.
 
 (* Q15. write a function `rmatch` s.t. `rmatch r w` checks wether a     *)
 (*      word `w` matches a given regular expression `r`.                *)
