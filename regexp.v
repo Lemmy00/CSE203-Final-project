@@ -325,8 +325,22 @@ induction w.
   done.
 Qed.
 
+
 (* -------------------------------------------------------------------- *)
 (* Q5. prove that `langM L` is regular, given that L is regular.        *)
+
+Lemma aux_lemma L : forall w, langK L w -> langK (langM L) (rev w).
+Proof.
+move => w h. 
+induction h.
++apply wnill.
++apply winL. 
+ unfold langM.
+ rewrite rev_involutive.
+ done.
++rewrite rev_app_distr. by apply cnct.
+Qed.
+
 Lemma regularM L : regular L -> regular (langM L).
 Proof.
 move=> h.
@@ -382,62 +396,31 @@ induction h.
    done.
   *exists (rev w2).
    exists (rev w1).
-   split.
-   -h
- 
-  split. move => [w1 [w2 h]]. destruct h; destruct H0.
-    exists (rev w2). exists (rev w1). 
-    rewrite -rev_app_distr. rewrite H1.
-    rewrite rev_involutive. rewrite rev_involutive. rewrite rev_involutive.
+   split; destruct h; destruct H0.
+   -symmetry in H.
+    symmetry.
+    apply rev_eq_app.
+    move: (rev_involutive w).
+    move => h.
+    rewrite h.
     done.
-  move => [w1 [w2 h]]. destruct h; destruct H0.
-    exists (rev w2). exists (rev w1).
-    rewrite -rev_app_distr. rewrite H1.
-    done.
-
-
- 
-
-move=> h.
-unfold langM.
-induction h.
-+apply REq with (langM L); try done.
- unfold langM.
- split; apply H.
-+apply REmpty.
-+apply REq with (fun w => lang1 w).
- *apply REmptyW.
- *split; unfold lang1;induction w; try done.
-  move => h.
-  simpl in h.
-  symmetry in h.
-  apply app_cons_not_nil in h.
+   -split; done.
++apply (REq (RKleene IHh)).
+ move => w.
+ split; move => h1.
+ *unfold langM in h1. 
+  move: (aux_lemma h1).
+  move => h2.
+  rewrite rev_involutive in h2. 
   done.
-+apply REq with (fun w => langW (rev w0) w).
- *apply ROneW.
- *split; unfold langW.
-  -move=> h.
-   rewrite h.
-   apply rev_involutive.
-  -move=> h. 
-   rewrite <-h. symmetry.
-   apply rev_involutive.
-+apply RUnion.
- *apply IHh1.
- *apply IHh2.
-+apply REq with (fun w => langS (langM L1) (langM L2) w).
- *apply RConc; done.
- *split; unfold langS; unfold langM; move => [w1 [w2 [h [l1 l2]]]].
-  -exists (rev w2). exists (rev w1).
-   split.
-   **symmetry in h.
-     symmetry.
-     apply rev_eq_app. done.
-   **split.
-     move: (rev_involutive w2).
-     move => rev_h.
-     rewrite rev_h.
-Admitted.
+ *induction h1; unfold langM.
+  -apply wnill.
+  -apply winL. 
+   done.
+  -rewrite rev_app_distr. 
+   apply cnct; done.
+Qed.
+
 
 (* ==================================================================== *)
 (*                        REGULAR EXPRESSIONS                           *)
@@ -622,12 +605,41 @@ Qed.
 (* Q10. write a binary predicate eqR : regexp -> regexp -> Prop s.t.    *)
 (*      eqR r1 r2 iff r1 and r2 are equivalent regexp.                  *)
 
-Definition eqR (r1 r2 : regexp) : Prop := todo.
+Definition eqR (r1 r2 : regexp) : Prop := (interp r1) =L (interp r2).
 
 Infix "~" := eqR (at level 90).
 
 (* Q11. state and prove the following regexp equivalence:               *)
 (*           (a|b)* ~ ( a*b* )*                                         *)
+
+Lemma or_kl_eq_kl_kl: forall (a b: regexp),
+                    (RE_Kleene (RE_Dis a b)) ~ 
+                    (RE_Kleene (RE_Conct (RE_Kleene a) (RE_Kleene b))).
+Proof.
+move=>a b.
+split.
+simpl.
+move=>h0.
+induction h0.
+apply wnill.
+apply winL.
+unfold langS. 
+unfold langU in H.
+destruct H.
+exists w, nil.
+split. 
+apply app_nil_r.
+split.
+apply winL; done.
+apply wnill.
+exists nil, w.
+split.
+done.
+split.
+apply wnill.
+apply winL;done.
+by apply cnct.
+
 
 (* ==================================================================== *)
 (*                          REGEXP MATCHING                             *)
