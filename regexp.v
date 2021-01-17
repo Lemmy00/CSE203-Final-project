@@ -802,7 +802,7 @@ Parameter Aeq : A -> A -> bool.
 (* Here, `Aeq x y` has to be read as `Aeq x y = true`                   *)
 Axiom Aeq_dec : forall (x y : A), Aeq x y <-> x = y.
 
-Definition Brzozowski (x : A) (r : regexp) : regexp :=
+Fixpoint Brzozowski (x : A) (r : regexp) : regexp :=
   match r with
   | RE_Atom y => if (Aeq x y) then RE_Void else RE_Empty
   | RE_Void => RE_Empty
