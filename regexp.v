@@ -1,3 +1,6 @@
+(*              THIS IS OT THE FINAL VERSION OF THE PROJECT             *)
+(*          THE LAST FEW EXERCISES WILL BE UPLOADED ON TUESDAY          *)
+
 (* -------------------------------------------------------------------- *)
 Require Import ssreflect ssrbool List.
 
