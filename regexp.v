@@ -817,7 +817,11 @@ Definition Brzozowski (x : A) (r : regexp) : regexp :=
 (* Q15. write a function `rmatch` s.t. `rmatch r w` checks wether a     *)
 (*      word `w` matches a given regular expression `r`.                *)
 
-Definition rmatch (r : regexp) (w : word) : bool := todo.
+Fixpoint rmatch (r : regexp) (w : word) : bool := 
+  match w with
+  | nil => contains0 r
+  | cons x w => rmatch (Brzozowski x r) w
+  end.
 
 (* Q16. show that the `Brzozowski` function is correct.                 *)
 
