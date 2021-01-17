@@ -1,7 +1,6 @@
 (* -------------------------------------------------------------------- *)
 Require Import ssreflect ssrbool List.
 
-
 Set Implicit Arguments.
 
 Axiom todo : forall {A}, A.
@@ -606,85 +605,12 @@ Qed.
 (* Q10. write a binary predicate eqR : regexp -> regexp -> Prop s.t.    *)
 (*      eqR r1 r2 iff r1 and r2 are equivalent regexp.                  *)
 
-Definition eqR (r1 r2 : regexp) : Prop := (interp r1) =L (interp r2).
+Definition eqR (r1 r2 : regexp) : Prop := todo.
 
 Infix "~" := eqR (at level 90).
 
 (* Q11. state and prove the following regexp equivalence:               *)
 (*           (a|b)* ~ ( a*b* )*                                         *)
-
-Lemma langKlangU_LR: forall a b w1 w2, (langK (interp a) w1) -> (langK (interp b) w2) -> 
-    (langK (langU (interp a) (interp b)) w1) /\ (langK (langU (interp a) (interp b)) w2).
-Proof.
-
-split.
-induction H. 
-apply wnill. 
-apply winL. 
-by left.
-apply cnct. 
-apply IHlangK1. 
-apply IHlangK2.
-induction H0. 
-apply wnill. 
-apply winL. 
-by right.
-apply cnct. 
-apply IHlangK1. 
-apply IHlangK2.
-Qed.
-
-Lemma kl_or_eq_kl_kls: forall (a b: regexp),
-                    (RE_Kleene (RE_Dis a b)) ~ 
-                    (RE_Kleene (RE_Conct (RE_Kleene a) (RE_Kleene b))).
-Proof.
-split.
-
-+simpl.
-move=>h0.
-induction h0.
-
--apply wnill.
-
--apply winL.
-unfold langS. 
-unfold langU in H.
-destruct H.
-exists w, nil.
-split. 
-apply app_nil_r.
-split.
-apply winL; done.
-apply wnill.
-exists nil, w.
-split.
-done.
-split.
-apply wnill.
-apply winL;done.
-
--by apply cnct.
-
-+simpl.
-move=> h.
-induction h.
-
--apply wnill.
-
--move: H=> [w1 [w2 [eq [h1 h2]]]].
-rewrite -eq.
-apply cnct.
-apply langKlangU_LR with a b w1 w2 in h1. 
-move: h1 => [h1l h1r]. 
-apply h1l.
-done.
-apply langKlangU_LR with a b w1 w2 in h2. 
-move: h2 => [h2l h2r]. 
-apply h2r.
-done.
-
--by apply cnct.
-Qed.
 
 (* ==================================================================== *)
 (*                          REGEXP MATCHING                             *)
@@ -714,15 +640,7 @@ Qed.
 (*                                                                      *)
 (*      ∀ r, contains0 r ⇔ ε ∈ [e]                                      *)
 
-Fixpoint contains0 (r : regexp) : bool := 
-  match r with
-  | RE_Empty => false
-  | RE_Void => true
-  | RE_Atom _ => false
-  | RE_Dis a b => contains0 a || contains0 b
-  | RE_Conct a b => contains0 a && contains0 b
-  | RE_Kleene a => true
-  end.
+Definition contains0 (r : regexp) : bool := todo.
 
 (* Q13. prove that your definition of `contains0` is correct:           *)
 
