@@ -727,7 +727,56 @@ Fixpoint contains0 (r : regexp) : bool :=
 (* Q13. prove that your definition of `contains0` is correct:           *)
 
 Lemma contains0_ok r : contains0 r <-> interp r nil.
-Proof. todo. Qed.
+Proof. 
+split.
+move => h1.
+induction r; try done.
+simpl.
+simpl in h1.
+unfold langU.
+case a: (contains0 r1).
+left.
+apply IHr1.
+done.
+right.
+case b: (contains0 r2).
+apply IHr2.
+done.
+apply IHr2.
+rewrite b.
+rewrite a in h1.
+rewrite b in h1.
+done.
+simpl in h1.
+simpl.
+
+unfold langS.
+exists nil, nil.
+simpl.
+split.
+done.
+case a: (contains0 r1);case b: (contains0 r2);
+try split; try apply IHr1; try apply IHr2; 
+try rewrite a; try rewrite b; try rewrite a in h1; try rewrite b in h1;
+try simpl in h1; try apply h1; try done.
+simpl.
+apply wnill.
+move => h1.
+induction r;simpl;try done.
+simpl in h1.
+unfold langU in h1.
+move: h1 => [for_r1|for_r2];try intuition.
+simpl in h1.
+move: h1 => [w1 [w2 [H [a b]]]].
+
+apply app_eq_nil in H.
+move: H=>[H1 H2].
+rewrite H1 in a.
+rewrite H2 in b.
+rewrite IHr1.
+done.
+rewrite IHr2; try done.
+Qed.
 
 (* We give below the definition of the Brzozowski's derivative:         *)
 (*                                                                      *)
