@@ -674,8 +674,8 @@ induction h.
 
 -apply wnill.
 
--move: H=> [w1 [w2 [eq [h1 h2]]]].
-rewrite -eq.
+-move: H=> [w1 [w2 [wsum [h1 h2]]]].
+rewrite -wsum.
 apply cnct.
 apply langKlangU_LR with a b w1 w2 in h1. 
 move: h1 => [h1l h1r]. 
@@ -830,13 +830,111 @@ Fixpoint rmatch (r : regexp) (w : word) : bool :=
 
 Lemma Brzozowski_correct (x : A) (w : word) (r : regexp) :
   interp (Brzozowski x r) w -> interp r (x :: w).
-Proof. todo. Qed.
+Proof.
+move: w.
+induction r.
+
+by move => w.
+
+by move => w.
+
+move => w.
+simpl.
+case p: (Aeq x a).
+apply Aeq_dec in p.
+move => tmp.
+rewrite tmp. 
+by rewrite p.
+done.
+ 
+move => w.
+simpl.
+move => [h1|h2].
+left.
+apply IHr1.
+apply h1.
+right.
+apply IHr2.
+apply h2.
+
+move => w.
+simpl.
+case a: (contains0 r1). 
+simpl. 
+move => [h1 | h2].
+move: h1 => [w1 [w2 [wsum [H1 H2]]]].
+exists (x::w1).
+exists w2.
+rewrite -wsum.
+simpl.
+split.
+done.
+split.
+apply IHr1.
+done.
+done.
+move: h2 => [w1 [w2 [wsum [H1 H2]]]].
+exists nil.
+exists (x::w2). 
+simpl.
+rewrite H1 in wsum.
+simpl in wsum. 
+simpl. 
+rewrite wsum.
+split.
+done.
+split.
+apply contains0_ok.
+done.
+apply IHr2.
+rewrite -wsum.
+done.
+simpl.
+move => [h1|h2].
+move: h1 => [w1 [w2 [wsum [H1 H2]]]].
+exists (x::w1). 
+exists w2. 
+simpl. 
+rewrite wsum.
+split.
+done.
+split.
+apply IHr1.
+done.
+done.
+move: h2 => [w1 [w2 [wsum [H1 H2]]]].
+done.
+
+move => w.
+simpl. 
+unfold langS.
+move => [w1 [w2 [wsum [H1 H2]]]].
+rewrite -wsum. 
+rewrite app_comm_cons. 
+apply cnct.
+apply winL. 
+by apply IHr.
+apply H2.
+Qed.
+
+
+
 
 (* Q17. show that `rmatch` is correct.                                  *)
 
 Lemma rmatch_correct (r : regexp) (w : word):
   rmatch r w -> interp r w.
-Proof. todo. Qed.
+Proof.
+move:r.
+induction w.
+simpl.
+apply contains0_ok.
+simpl.
+move => r h. 
+apply Brzozowski_correct. 
+apply IHw.  
+done.
+Qed.
 
 (* Q18. (HARD - OPTIONAL) show that `rmatch` is complete.               *)
 
