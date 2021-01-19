@@ -144,9 +144,9 @@ Definition langS L G : language :=
 
 (* The Kleene closure of the language `L`                               *)
 Inductive langK L : language :=
-|wnill : langK L nil
-|winL w : L w -> langK L w
-|cnct w1 w2 : langK L w1 -> langK L w2 -> langK L (w1 ++ w2).
+| wnill : langK L nil
+| winL w : L w -> langK L w
+| cnct w1 w2 : langK L w1 -> langK L w2 -> langK L (w1 ++ w2).
 
 (* The mirror of the language `L` (You can use the `rev`, that reversed *)
 (* a list, from the standard library. *)
@@ -166,25 +166,25 @@ Infix "=L" := eqL (at level 90).
 Lemma concat0L L : langS lang0 L =L lang0.
 Proof.
 move=> w.
-split; unfold langS; unfold lang0; try done.
-move=> [w1 [w2 [h [Contradition h1]]]].
+split; try done.
+move=> [w1 [w2 [h [h1 h2]]]].
 done.
 Qed.
 
 Lemma concatL0 L : langS L lang0 =L lang0.
 Proof.
 move=> w.
-split; unfold langS; unfold lang0; try done.
-move=> [w1 [w2 [h [h1 Contradition]]]].
+split; try done.
+move=> [w1 [w2 [h [h1 h2]]]].
 done.
 Qed.
 
 Lemma concat1L L : langS lang1 L =L L.
 Proof.
 move => w.
-split; unfold langS; unfold lang1.
-+move=> [w1 [w2 [h [nil Lw]]]].
- rewrite nil in h.
+split.
++move=> [w1 [w2 [h [n Lw]]]].
+ rewrite n in h.
  simpl in h.
  rewrite h in Lw.
  done.
@@ -196,7 +196,7 @@ Qed.
 Lemma concatL1 L : langS L lang1 =L L.
 Proof.
 move => w.
-split; unfold langS; unfold lang1.
+split.
 +move=> [w1 [w2 [h [Lw nil]]]].
  rewrite nil in h.
  rewrite (app_nil_r w1) in h.
@@ -211,7 +211,7 @@ Qed.
 Lemma concatA L G H : langS (langS L G) H =L langS L (langS G H).
 Proof.
 move => w.
-split; unfold langS.
+split.
 +move => [w1 [w2 [h [[w3 [w4 [h1 [Lw3 Gw4] Hw2]]]]]]].
  exists w3. exists (w4 ++ w2).
  split.
@@ -235,7 +235,6 @@ Qed.
 Lemma unionC L G : langU L G =L langU G L.
 Proof.
 move => w.
-unfold langU.
 split; move => [h1 | h2].
 +right. done.
 +left. done.
@@ -246,7 +245,6 @@ Qed.
 Lemma interC L G : langI L G =L langI G L.
 Proof.
 move => w.
-unfold langI.
 split; move => [h1  h2]; split; done.
 Qed.
 
@@ -301,25 +299,20 @@ Inductive regular : language -> Prop :=
 Lemma regularW w : regular (langW w).
 Proof.
 induction w.
-+move: REmptyW.
- unfold lang1.
- unfold langW.
- done.
++apply REmptyW.
 +move: (ROneW a).
  move => h1.
  move: (RConc h1 IHw).
  move => h2.
  apply (REq h2).
  move => w1.
- unfold langW.
- unfold langS.
- unfold langA.
- split. move => h3.
- exists (cons a nil). exists w.
  split. 
- *symmetry.
-  rewrite h3. done.
- *split; done.
+ *move => h3.
+  exists (cons a nil). exists w.
+  split. 
+  -symmetry.
+   rewrite h3. done.
+  -split; done.
  *move => [w2 [w3 [h3 [h4 h5]]]].
   rewrite h4 in h3. 
   rewrite h5 in h3.
@@ -339,7 +332,8 @@ induction h.
  unfold langM.
  rewrite rev_involutive.
  done.
-+rewrite rev_app_distr. by apply cnct.
++rewrite rev_app_distr. 
+ apply cnct; done.
 Qed.
 
 Lemma regularM L : regular L -> regular (langM L).
@@ -350,35 +344,28 @@ induction h.
  apply REq with (langM L); try done.
  unfold langM.
  split; apply H.
-+unfold langM. apply REmpty.
++unfold langM. 
+ apply REmpty.
 +unfold langM. 
  apply REq with (fun w => lang1 w).
  *apply REmptyW.
- *split; unfold lang1;induction w; try done.
+ *split; unfold lang1; induction w; try done.
   move => h.
   simpl in h.
   symmetry in h.
   apply app_cons_not_nil in h. done.
 +apply (REq (ROneW x)).
  move => w. 
- unfold langM. 
- unfold langA.
  split; move => h.
   move: (rev_involutive w).
   move => h1.
-  rewrite h in h1.
-  done.
- *rewrite h. 
-  done.
+  rewrite h in h1. done.
+ *rewrite h. done.
 +apply (REq (RUnion IHh1 IHh2)). 
- move => w. 
- unfold langM. 
- unfold langU. 
- done.
+ move => w. done.
 +apply (REq (RConc IHh2 IHh1)). 
  move => w. 
  unfold langM.
- unfold langS.
  split; move => [w1 [w2 h]]. destruct h; destruct H0.
  exists (rev w2).
  exists (rev w1).
@@ -409,16 +396,17 @@ induction h.
 +apply (REq (RKleene IHh)).
  move => w.
  split; move => h1.
- *unfold langM in h1. 
+ *unfold langM in h1.
   move: (aux_lemma h1).
   move => h2.
   rewrite rev_involutive in h2. 
   done.
- *induction h1; unfold langM.
+ *induction h1.
   -apply wnill.
   -apply winL. 
    done.
-  -rewrite rev_app_distr. 
+  -unfold langM.
+   rewrite rev_app_distr. 
    apply cnct; done.
 Qed.
 
@@ -504,7 +492,7 @@ Fixpoint interp (r : regexp) {struct r} : language :=
 
 Lemma regular_regexp r : regular (interp r).
 Proof.
-induction r; simpl.
+induction r.
 +apply REmpty.
 +apply REmptyW.
 +apply ROneW.
@@ -517,85 +505,44 @@ Qed.
 (*     regular expression:                                              *)
 
 
-Lemma equal_langU (L1 L2 G1 G2: language) : L1 =L L2 -> G1 =L G2 -> langU L1 G1 =L langU L2 G2.
-Proof.
-unfold eqL. 
-move => h1 h2 w.
-unfold langU.
-move: (h1 w).
-move => [h3 h4]. 
-move: (h2 w).
-move => [h5 h6].
-split; case.
-+left. 
- apply (h3 a).
-+right.
- apply (h5 b).
-+left. 
- apply (h4 a). 
-+right.
- apply (h6 b).
-Qed.
-
-Lemma equal_langS (L1 L2 G1 G2: language) : L1 =L L2 -> G1 =L G2 -> langS L1 G1 =L langS L2 G2.
-Proof.
-unfold eqL. 
-move => h1 h2 w. 
-unfold langS.
-split; move => [w1 [w2 h]]; destruct h; destruct H0; 
-exists w1; exists w2; split; try done; split; try apply h1; try apply h2; done.
-Qed.
-
 Lemma equal_langK L G: L =L G -> langK L =L langK G.
-Proof.
-unfold eqL. 
+Proof. 
 move => h w0.
 split; move => h1; induction h1; try apply wnill.
 +apply winL. 
  move: (h w) => [h2 h3]. 
- apply (h2 H).
+ apply h2. done.
 +apply cnct; done. 
 +apply winL. 
  move: (h w) => [h2 h3]. 
- apply (h3 H).
+ apply h3. done.
 +apply cnct; done.
 Qed.
 
 Lemma regexp_regular L : regular L -> exists r, L =L interp r.
 Proof.
 move => h. induction h.
-+move: IHh => [r h1]. 
- exists r.
- split.
- *move => h2.
-  apply h1. 
++destruct IHh.
+ exists x.
+ split; move => h2.
+ *apply H0. 
   apply H.
   done.
- *move => h2.
-  apply H.
-  apply h1.
+ *apply H.
+  apply H0.
   done.
 +exists RE_Empty. done.
 +exists RE_Void. done.
 +exists (RE_Atom x). done.
-+move: IHh1.
- move => [r1 h3]. 
- move: IHh2. 
- move =>[r2 h4]. 
- exists (RE_Dis r1 r2).
- simpl. 
- apply equal_langU; done.
-+move: IHh1.
- move => [r1 h3]. 
- move: IHh2. 
- move =>[r2 h4]. 
- exists (RE_Conct r1 r2).
- simpl. 
- apply equal_langS; done.
-+move: IHh.
- move => [r1 h3].
- exists (RE_Kleene r1).
- simpl.
++destruct IHh1. destruct IHh2.
+ exists (RE_Dis x x0).
+ split; unfold langU; rewrite H; rewrite H0; done.
++destruct IHh1. destruct IHh2.
+ exists (RE_Conct x x0).
+ split; move => [w1 [w2 h]]; destruct h; destruct H2;
+ exists w1; exists w2; split; try done; split; try apply H0; try apply H; done.
++destruct IHh.
+ exists (RE_Kleene x).
  apply equal_langK.
  done.
 Qed.
@@ -733,7 +680,6 @@ move => h1.
 induction r; try done.
 simpl.
 simpl in h1.
-unfold langU.
 case a: (contains0 r1).
 left.
 apply IHr1.
@@ -750,7 +696,6 @@ done.
 simpl in h1.
 simpl.
 
-unfold langS.
 exists nil, nil.
 simpl.
 split.
